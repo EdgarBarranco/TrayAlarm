@@ -108,9 +108,10 @@ namespace TrayAlarm
 
         private void InitializeComponents()
         {
-            this.Text = "Tray Alarm Manager";
+            this.Text = "Tray Alarm";
             this.Size = new Size(780, 560);
-            this.MinimumSize = new Size(680, 480);
+            this.MinimumSize = new Size(780, 480);
+            this.MaximumSize = new Size(780, 800);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.FromArgb(243, 244, 246);
             this.Font = new Font("Segoe UI", 9f, FontStyle.Regular);
@@ -126,7 +127,7 @@ namespace TrayAlarm
 
             _lblTitle = new Label
             {
-                Text = "Tray Alarm Manager",
+                Text = "Tray Alarm",
                 ForeColor = Color.White,
                 Font = new Font("Segoe UI", 13.5f, FontStyle.Bold),
                 Location = new Point(18, 12),
@@ -195,7 +196,7 @@ namespace TrayAlarm
 
             _lblDate = new Label
             {
-                Text = "Date (default: today):",
+                Text = "Date:",
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Regular),
                 ForeColor = Color.FromArgb(71, 85, 105),
                 Location = new Point(16, 26),
@@ -214,10 +215,10 @@ namespace TrayAlarm
 
             _lblTime = new Label
             {
-                Text = "Time (hh:mm AM/PM):",
+                Text = "Time:",
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Regular),
                 ForeColor = Color.FromArgb(71, 85, 105),
-                Location = new Point(148, 26),
+                Location = new Point(145, 26),
                 AutoSize = true
             };
 
@@ -234,7 +235,7 @@ namespace TrayAlarm
 
             _lblAlarmTitle = new Label
             {
-                Text = "Alarm Title / Note (e.g. check stove, change tv to channel 5):",
+                Text = "Alarm Title:",
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Regular),
                 ForeColor = Color.FromArgb(71, 85, 105),
                 Location = new Point(265, 26),
@@ -245,8 +246,8 @@ namespace TrayAlarm
             {
                 Font = new Font("Segoe UI", 9.5f),
                 Location = new Point(265, 48),
-                Width = 265,
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+                Width = 375,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left
             };
             _txtTitle.KeyDown += (s, e) =>
             {
@@ -259,14 +260,14 @@ namespace TrayAlarm
 
             _btnAddAlarm = new Button
             {
-                Text = "+ Add Alarm",
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Text = "Add Alarm",
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
                 BackColor = Color.FromArgb(37, 99, 235),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
-                Location = new Point(540, 47),
-                Size = new Size(110, 30),
-                Anchor = AnchorStyles.Top | AnchorStyles.Right,
+                Location = new Point(380, 47),
+                Size = new Size(80, 26),
+                Anchor = AnchorStyles.Top,
                 Cursor = Cursors.Hand
             };
             _btnAddAlarm.FlatAppearance.BorderSize = 0;
@@ -274,9 +275,9 @@ namespace TrayAlarm
 
             // Quick preset offset buttons
             Button btnPlus5 = CreatePresetButton("+5m", 5, 16, 80);
-            Button btnPlus15 = CreatePresetButton("+15m", 15, 66, 80);
-            Button btnPlus30 = CreatePresetButton("+30m", 30, 122, 80);
-            Button btnPlus60 = CreatePresetButton("+1h", 60, 184, 80);
+            Button btnPlus15 = CreatePresetButton("+15m", 15, 68, 80);
+            Button btnPlus30 = CreatePresetButton("+30m", 30, 120, 80);
+            Button btnPlus60 = CreatePresetButton("+1h", 60, 172, 80);
 
             _grpAdd.Controls.Add(_lblDate);
             _grpAdd.Controls.Add(_dtpDate);
@@ -477,7 +478,7 @@ namespace TrayAlarm
         {
             _trayMenu = new ContextMenuStrip();
 
-            ToolStripMenuItem mnuOpen = new ToolStripMenuItem("Open Alarm Manager", null, (s, e) => ShowAndRestore());
+            ToolStripMenuItem mnuOpen = new ToolStripMenuItem("Open Tray Alarm", null, (s, e) => ShowAndRestore());
             mnuOpen.Font = new Font(mnuOpen.Font, FontStyle.Bold);
 
             ToolStripMenuItem mnuAdd = new ToolStripMenuItem("Add Quick Alarm...", null, (s, e) =>
@@ -523,7 +524,7 @@ namespace TrayAlarm
             {
                 Icon = this.Icon,
                 ContextMenuStrip = _trayMenu,
-                Text = "Tray Alarm Manager",
+                Text = "Tray Alarm",
                 Visible = true
             };
 
