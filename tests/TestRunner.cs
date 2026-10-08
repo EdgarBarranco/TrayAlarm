@@ -26,6 +26,7 @@ namespace TrayAlarm.Tests
             RunTest("SaveRoundTrip", TestSaveRoundTrip);
             RunTest("TriggerEvaluationLogic", TestTriggerEvaluationLogic);
             RunTest("SnoozeCalculation", TestSnoozeCalculation);
+            RunTest("DateFormattingAnd12HourAmPm", TestDateFormattingAnd12HourAmPm);
 
             // System Theme Tests
             RunTest("ThemeManagerDefaultModeAndPalette", TestThemeManagerDefaultModeAndPalette);
@@ -215,10 +216,63 @@ namespace TrayAlarm.Tests
 
                 Assert(loaded.Count == 2, "Expected 2 items after save and reload");
                 Assert(loaded[0].Title == "check stove, carefully", "Expected exact title with comma");
-                Assert(loaded[0].TimeString == "08:32", "Expected time 08:32");
+                Assert(loaded[0].TimeString == "08:32 AM", "Expected time 08:32 AM");
+                Assert(loaded[0].DateString == DateTime.Today.ToString("MM/dd/yyyy"), "Expected MM/dd/yyyy date format");
                 Assert(loaded[0].Status == "Pending", "Expected status Pending");
                 Assert(loaded[1].Title == "change tv to channel 5", "Expected title");
+                Assert(loaded[1].TimeString == "08:49 AM", "Expected time 08:49 AM");
                 Assert(loaded[1].Status == "Triggered", "Expected status Triggered");
+            }
+            finally
+            {
+                if (File.Exists(tempFile)) File.Delete(tempFile);
+            }
+        }
+
+        static void TestDateFormattingAnd12HourAmPm()
+        {
+            // 1. Date format verification (MM/dd/yyyy)
+            var alarmDate1 = new AlarmItem(new DateTime(2026, 10, 8), new TimeSpan(8, 32, 0), "Date test");
+            Assert(alarmDate1.DateString == "10/08/2026", "Expected 10/08/2026, got " + alarmDate1.DateString);
+
+            var alarmDate2 = new AlarmItem(new DateTime(2026, 1, 5), new TimeSpan(8, 32, 0), "Date test single digit");
+            Assert(alarmDate2.DateString == "01/05/2026", "Expected 01/05/2026, got " + alarmDate2.DateString);
+
+            // 2. Time format verification (hh:mm AM/PM)
+            var morning = new AlarmItem(DateTime.Today, new TimeSpan(8, 32, 0), "Morning");
+            Assert(morning.TimeString == "08:32 AM", "Expected 08:32 AM, got " + morning.TimeString);
+
+            var noon = new AlarmItem(DateTime.Today, new TimeSpan(12, 0, 0), "Noon");
+            Assert(noon.TimeString == "12:00 PM", "Expected 12:00 PM, got " + noon.TimeString);
+
+            var afternoon = new AlarmItem(DateTime.Today, new TimeSpan(13, 45, 0), "Afternoon");
+            Assert(afternoon.TimeString == "01:45 PM", "Expected 01:45 PM, got " + afternoon.TimeString);
+
+            var evening = new AlarmItem(DateTime.Today, new TimeSpan(20, 49, 0), "Evening");
+            Assert(evening.TimeString == "08:49 PM", "Expected 08:49 PM, got " + evening.TimeString);
+
+            var midnight = new AlarmItem(DateTime.Today, new TimeSpan(0, 0, 0), "Midnight");
+            Assert(midnight.TimeString == "12:00 AM", "Expected 12:00 AM, got " + midnight.TimeString);
+
+            var midnightFive = new AlarmItem(DateTime.Today, new TimeSpan(0, 5, 0), "Midnight 5");
+            Assert(midnightFive.TimeString == "12:05 AM", "Expected 12:05 AM, got " + midnightFive.TimeString);
+
+            // 3. Round-trip serialization and tolerant parsing of MM/dd/yyyy and hh:mm AM/PM
+            string tempFile = Path.GetTempFileName();
+            try
+            {
+                File.WriteAllText(tempFile, "Date,Time,Title,Status\n10/08/2026,08:32 AM,Morning stretch,Pending\n10/08/2026,08:49 PM,Evening film,Pending\n");
+                var repo = new CsvRepository(tempFile);
+                var loaded = repo.Load();
+
+                Assert(loaded.Count == 2, "Expected 2 items");
+                Assert(loaded[0].DateString == "10/08/2026", "Expected 10/08/2026");
+                Assert(loaded[0].TimeString == "08:32 AM", "Expected 08:32 AM");
+                Assert(loaded[0].Time == new TimeSpan(8, 32, 0), "Expected 8:32:00 TimeSpan");
+
+                Assert(loaded[1].DateString == "10/08/2026", "Expected 10/08/2026");
+                Assert(loaded[1].TimeString == "08:49 PM", "Expected 08:49 PM");
+                Assert(loaded[1].Time == new TimeSpan(20, 49, 0), "Expected 20:49:00 TimeSpan");
             }
             finally
             {

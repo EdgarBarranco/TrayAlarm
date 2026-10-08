@@ -205,7 +205,7 @@ namespace TrayAlarm
             _dtpDate = new DateTimePicker
             {
                 Format = DateTimePickerFormat.Custom,
-                CustomFormat = "yyyy-MM-dd",
+                CustomFormat = "MM/dd/yyyy",
                 Value = DateTime.Today,
                 Font = new Font("Segoe UI", 9.5f),
                 Location = new Point(16, 48),
@@ -214,7 +214,7 @@ namespace TrayAlarm
 
             _lblTime = new Label
             {
-                Text = "Time (HH:mm):",
+                Text = "Time (hh:mm AM/PM):",
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Regular),
                 ForeColor = Color.FromArgb(71, 85, 105),
                 Location = new Point(148, 26),
@@ -224,12 +224,12 @@ namespace TrayAlarm
             _dtpTime = new DateTimePicker
             {
                 Format = DateTimePickerFormat.Custom,
-                CustomFormat = "HH:mm",
+                CustomFormat = "hh:mm tt",
                 ShowUpDown = true,
                 Value = DateTime.Now.AddMinutes(5),
                 Font = new Font("Segoe UI", 9.5f),
                 Location = new Point(148, 48),
-                Width = 90
+                Width = 105
             };
 
             _lblAlarmTitle = new Label
@@ -237,15 +237,15 @@ namespace TrayAlarm
                 Text = "Alarm Title / Note (e.g. check stove, change tv to channel 5):",
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Regular),
                 ForeColor = Color.FromArgb(71, 85, 105),
-                Location = new Point(250, 26),
+                Location = new Point(265, 26),
                 AutoSize = true
             };
 
             _txtTitle = new TextBox
             {
                 Font = new Font("Segoe UI", 9.5f),
-                Location = new Point(250, 48),
-                Width = 280,
+                Location = new Point(265, 48),
+                Width = 265,
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
             _txtTitle.KeyDown += (s, e) =>
@@ -411,7 +411,7 @@ namespace TrayAlarm
             {
                 Name = "ColDate",
                 HeaderText = "Date",
-                Width = 95,
+                Width = 100,
                 ReadOnly = true
             });
 
@@ -419,7 +419,7 @@ namespace TrayAlarm
             {
                 Name = "ColTime",
                 HeaderText = "Time",
-                Width = 70,
+                Width = 90,
                 ReadOnly = true
             });
 
@@ -1102,7 +1102,7 @@ namespace TrayAlarm
 
         private void UpdateStatus(string message)
         {
-            _statusLabel.Text = string.Format("[{0}] {1}", DateTime.Now.ToString("HH:mm:ss"), message);
+            _statusLabel.Text = string.Format("[{0}] {1}", DateTime.Now.ToString("hh:mm:ss tt"), message);
         }
 
         private void OpenCsvInNotepad()

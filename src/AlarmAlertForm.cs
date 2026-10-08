@@ -135,7 +135,7 @@ namespace TrayAlarm
 
             _lblCurrentTime = new Label
             {
-                Text = "Triggered at: " + DateTime.Now.ToString("HH:mm:ss"),
+                Text = "Triggered at: " + DateTime.Now.ToString("hh:mm:ss tt"),
                 Font = new Font("Segoe UI", 9f, FontStyle.Italic),
                 ForeColor = Color.FromArgb(100, 116, 139),
                 Location = new Point(22, 145),

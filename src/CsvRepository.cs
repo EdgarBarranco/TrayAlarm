@@ -300,13 +300,18 @@ namespace TrayAlarm
             {
                 "h:mm tt",
                 "hh:mm tt",
+                "h:mmtt",
+                "hh:mmtt",
                 "H:mm",
                 "HH:mm",
                 "h:mm:ss tt",
                 "hh:mm:ss tt",
+                "h:mm:sstt",
+                "hh:mm:sstt",
                 "H:mm:ss",
                 "HH:mm:ss",
                 "h:m tt",
+                "h:mtt",
                 "H:m"
             };
 

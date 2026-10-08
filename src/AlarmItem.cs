@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 
 namespace TrayAlarm
 {
@@ -56,12 +57,18 @@ namespace TrayAlarm
 
         public string DateString
         {
-            get { return Date.ToString("yyyy-MM-dd"); }
+            get { return Date.ToString("MM/dd/yyyy", CultureInfo.InvariantCulture); }
         }
 
         public string TimeString
         {
-            get { return string.Format("{0:D2}:{1:D2}", Time.Hours, Time.Minutes); }
+            get
+            {
+                int h = Math.Abs(Time.Hours) % 24;
+                int m = Math.Abs(Time.Minutes) % 60;
+                var dt = new DateTime(2000, 1, 1, h, m, 0);
+                return dt.ToString("hh:mm tt", CultureInfo.InvariantCulture);
+            }
         }
 
         public AlarmItem Clone()
