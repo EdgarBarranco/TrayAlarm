@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Drawing;
 using TrayAlarm;
 
 namespace TrayAlarm.Tests
@@ -25,6 +26,16 @@ namespace TrayAlarm.Tests
             RunTest("SaveRoundTrip", TestSaveRoundTrip);
             RunTest("TriggerEvaluationLogic", TestTriggerEvaluationLogic);
             RunTest("SnoozeCalculation", TestSnoozeCalculation);
+
+            // System Theme Tests
+            RunTest("ThemeManagerDefaultModeAndPalette", TestThemeManagerDefaultModeAndPalette);
+            RunTest("ThemeManagerLightPalette", TestThemeManagerLightPalette);
+            RunTest("ThemeManagerDarkPalette", TestThemeManagerDarkPalette);
+            RunTest("ThemeManagerLuminanceAndContrast", TestThemeManagerLuminanceAndContrast);
+            RunTest("ThemeManagerBrightnessAdjustment", TestThemeManagerBrightnessAdjustment);
+            RunTest("ThemeManagerModeSwitchAndEvent", TestThemeManagerModeSwitchAndEvent);
+            RunTest("ThemeManagerSystemAccentRetrieval", TestThemeManagerSystemAccentRetrieval);
+            RunTest("ThemeManagerSystemDarkDetection", TestThemeManagerSystemDarkDetection);
 
             Console.WriteLine("\n--------------------------------------");
             Console.WriteLine(string.Format("Results: {0} Passed, {1} Failed", _passed, _failed));
@@ -236,6 +247,110 @@ namespace TrayAlarm.Tests
             Assert(snoozed.IsPending, "Snoozed alarm should be Pending");
             Assert(snoozed.Title == "Lunch time (Snooze)", "Title should indicate snooze");
             Assert(snoozed.ScheduledDateTime > DateTime.Now, "Snoozed alarm should be in the future");
+        }
+
+        static void TestThemeManagerDefaultModeAndPalette()
+        {
+            ThemeManager.Initialize();
+            Assert(ThemeManager.CurrentTheme != null, "CurrentTheme should not be null");
+            Assert(ThemeManager.Mode == ThemeMode.System, "Default mode should be ThemeMode.System");
+            Assert(ThemeManager.CurrentTheme.AccentColor.A == 255, "Accent color alpha should be 255");
+        }
+
+        static void TestThemeManagerLightPalette()
+        {
+            Color testAccent = Color.FromArgb(0, 120, 212);
+            ThemeColors palette = ThemeManager.CreatePalette(false, testAccent);
+
+            Assert(!palette.IsDarkMode, "Light palette IsDarkMode should be false");
+            Assert(palette.CardBackground == Color.White, "CardBackground should be White");
+            Assert(palette.TextPrimary == Color.FromArgb(15, 23, 42), "TextPrimary should be dark slate");
+            Assert(palette.AccentColor == testAccent, "AccentColor should match provided accent");
+            Assert(palette.GridBackground == Color.White, "GridBackground should be White");
+        }
+
+        static void TestThemeManagerDarkPalette()
+        {
+            Color testAccent = Color.FromArgb(0, 120, 212);
+            ThemeColors palette = ThemeManager.CreatePalette(true, testAccent);
+
+            Assert(palette.IsDarkMode, "Dark palette IsDarkMode should be true");
+            Assert(palette.WindowBackground == Color.FromArgb(32, 32, 32), "WindowBackground should be dark");
+            Assert(palette.CardBackground == Color.FromArgb(43, 43, 43), "CardBackground should be dark surface");
+            Assert(palette.TextPrimary == Color.FromArgb(245, 245, 245), "TextPrimary should be bright white");
+            Assert(palette.AccentColor == testAccent, "AccentColor should match provided accent");
+            Assert(palette.GridBackground == Color.FromArgb(28, 28, 30), "GridBackground should be dark gray");
+        }
+
+        static void TestThemeManagerLuminanceAndContrast()
+        {
+            double blackLum = ThemeManager.CalculateLuminance(Color.Black);
+            double whiteLum = ThemeManager.CalculateLuminance(Color.White);
+
+            Assert(Math.Abs(blackLum - 0.0) < 0.01, "Black luminance should be ~0.0");
+            Assert(Math.Abs(whiteLum - 1.0) < 0.01, "White luminance should be ~1.0");
+
+            // Bright yellow accent should yield dark text for WCAG contrast
+            Color yellowAccent = Color.FromArgb(255, 235, 59);
+            ThemeColors yellowPalette = ThemeManager.CreatePalette(false, yellowAccent);
+            Assert(yellowPalette.AccentTextColor == Color.FromArgb(15, 23, 42), "Bright yellow accent requires dark text");
+
+            // Dark blue accent should yield white text
+            Color navyAccent = Color.FromArgb(10, 30, 80);
+            ThemeColors navyPalette = ThemeManager.CreatePalette(false, navyAccent);
+            Assert(navyPalette.AccentTextColor == Color.White, "Dark navy accent requires white text");
+        }
+
+        static void TestThemeManagerBrightnessAdjustment()
+        {
+            Color baseColor = Color.FromArgb(100, 100, 100);
+            Color brighter = ThemeManager.AdjustBrightness(baseColor, 1.5f);
+            Color darker = ThemeManager.AdjustBrightness(baseColor, 0.5f);
+
+            Assert(brighter.R == 150 && brighter.G == 150 && brighter.B == 150, "Brighter should be 150");
+            Assert(darker.R == 50 && darker.G == 50 && darker.B == 50, "Darker should be 50");
+
+            Color maxCapped = ThemeManager.AdjustBrightness(Color.FromArgb(200, 200, 200), 2.0f);
+            Assert(maxCapped.R == 255 && maxCapped.G == 255 && maxCapped.B == 255, "Should cap at 255");
+        }
+
+        static void TestThemeManagerModeSwitchAndEvent()
+        {
+            bool eventFired = false;
+            EventHandler handler = (s, e) => { eventFired = true; };
+
+            ThemeManager.ThemeChanged += handler;
+            try
+            {
+                ThemeManager.Mode = ThemeMode.Dark;
+                Assert(eventFired, "ThemeChanged event should fire when switching to Dark");
+                Assert(ThemeManager.CurrentTheme.IsDarkMode, "CurrentTheme should be dark");
+
+                eventFired = false;
+                ThemeManager.Mode = ThemeMode.Light;
+                Assert(eventFired, "ThemeChanged event should fire when switching to Light");
+                Assert(!ThemeManager.CurrentTheme.IsDarkMode, "CurrentTheme should be light");
+            }
+            finally
+            {
+                ThemeManager.ThemeChanged -= handler;
+                ThemeManager.Mode = ThemeMode.System; // Reset to default
+            }
+        }
+
+        static void TestThemeManagerSystemAccentRetrieval()
+        {
+            Color accent = ThemeManager.GetSystemAccentColor();
+            Assert(accent != Color.Empty, "System accent color should not be empty");
+            Assert(accent.A == 255, "System accent alpha should be 255");
+            Assert(accent.R > 0 || accent.G > 0 || accent.B > 0, "System accent should have non-black components");
+        }
+
+        static void TestThemeManagerSystemDarkDetection()
+        {
+            // Verifies IsSystemInDarkMode executes safely without throwing any exceptions
+            bool isDark = ThemeManager.IsSystemInDarkMode();
+            Assert(isDark == true || isDark == false, "IsSystemInDarkMode should return valid boolean");
         }
     }
 }

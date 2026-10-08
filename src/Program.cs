@@ -27,6 +27,9 @@ namespace TrayAlarm
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
 
+                // Initialize System Theme integration
+                ThemeManager.Initialize();
+
                 // Global exception handler for stability
                 Application.ThreadException += (s, e) =>
                 {
