@@ -1,0 +1,241 @@
+using System;
+using System.IO;
+using System.Collections.Generic;
+using TrayAlarm;
+
+namespace TrayAlarm.Tests
+{
+    class TestRunner
+    {
+        private static int _passed = 0;
+        private static int _failed = 0;
+
+        static int Main(string[] args)
+        {
+            Console.WriteLine("======================================");
+            Console.WriteLine(" Running TrayAlarm Unit & Logic Tests ");
+            Console.WriteLine("======================================");
+
+            RunTest("LoadStandardCsv", TestLoadStandardCsv);
+            RunTest("LoadManual2ColCsv", TestLoadManual2ColCsv);
+            RunTest("LoadManual3ColCsv", TestLoadManual3ColCsv);
+            RunTest("LoadQuotedCsv", TestLoadQuotedCsv);
+            RunTest("Load12HourTimeFormats", TestLoad12HourTimeFormats);
+            RunTest("SpecialDates_TodayAndTomorrow", TestSpecialDates);
+            RunTest("SaveRoundTrip", TestSaveRoundTrip);
+            RunTest("TriggerEvaluationLogic", TestTriggerEvaluationLogic);
+            RunTest("SnoozeCalculation", TestSnoozeCalculation);
+
+            Console.WriteLine("\n--------------------------------------");
+            Console.WriteLine(string.Format("Results: {0} Passed, {1} Failed", _passed, _failed));
+            Console.WriteLine("--------------------------------------");
+
+            return _failed == 0 ? 0 : 1;
+        }
+
+        static void RunTest(string name, Action testAction)
+        {
+            try
+            {
+                testAction();
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("[PASS] " + name);
+                Console.ResetColor();
+                _passed++;
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("[FAIL] " + name + ": " + ex.Message);
+                Console.ResetColor();
+                _failed++;
+            }
+        }
+
+        static void Assert(bool condition, string message)
+        {
+            if (!condition)
+            {
+                throw new Exception("Assertion Failed: " + message);
+            }
+        }
+
+        static void TestLoadStandardCsv()
+        {
+            string tempFile = Path.GetTempFileName();
+            try
+            {
+                File.WriteAllText(tempFile, "Date,Time,Title,Status\n2026-10-07,08:32,check stove,Pending\n2026-10-07,08:49,change tv to channel 5,Pending\n");
+                var repo = new CsvRepository(tempFile);
+                var list = repo.Load();
+
+                Assert(list.Count == 2, "Expected 2 items, got " + list.Count);
+                Assert(list[0].Title == "check stove", "Expected title 'check stove', got " + list[0].Title);
+                Assert(list[0].Time == new TimeSpan(8, 32, 0), "Expected time 08:32:00, got " + list[0].Time);
+                Assert(list[0].Date == new DateTime(2026, 10, 7), "Expected date 2026-10-07, got " + list[0].DateString);
+                Assert(list[0].IsPending, "Expected Pending status");
+
+                Assert(list[1].Title == "change tv to channel 5", "Expected title 'change tv to channel 5', got " + list[1].Title);
+                Assert(list[1].Time == new TimeSpan(8, 49, 0), "Expected time 08:49:00, got " + list[1].Time);
+            }
+            finally
+            {
+                if (File.Exists(tempFile)) File.Delete(tempFile);
+            }
+        }
+
+        static void TestLoadManual2ColCsv()
+        {
+            // User modified CSV by hand without date or header: just time and title!
+            string tempFile = Path.GetTempFileName();
+            try
+            {
+                File.WriteAllText(tempFile, "8:32, check stove\n08:49, change tv to channel 5\n");
+                var repo = new CsvRepository(tempFile);
+                var list = repo.Load();
+
+                Assert(list.Count == 2, "Expected 2 items, got " + list.Count);
+                Assert(list[0].Title == "check stove", "Expected 'check stove', got " + list[0].Title);
+                Assert(list[0].Date == DateTime.Today, "Date should default to today");
+                Assert(list[0].Time.Hours == 8 && list[0].Time.Minutes == 32, "Time should be 8:32");
+                Assert(list[0].IsPending, "Status should default to Pending");
+
+                Assert(list[1].Title == "change tv to channel 5", "Expected 'change tv to channel 5', got " + list[1].Title);
+                Assert(list[1].Time.Hours == 8 && list[1].Time.Minutes == 49, "Time should be 8:49");
+            }
+            finally
+            {
+                if (File.Exists(tempFile)) File.Delete(tempFile);
+            }
+        }
+
+        static void TestLoadManual3ColCsv()
+        {
+            // User wrote Date, Time, Title without status
+            string tempFile = Path.GetTempFileName();
+            try
+            {
+                File.WriteAllText(tempFile, "2026-12-25, 09:00, Open presents\n");
+                var repo = new CsvRepository(tempFile);
+                var list = repo.Load();
+
+                Assert(list.Count == 1, "Expected 1 item");
+                Assert(list[0].Date == new DateTime(2026, 12, 25), "Expected Christmas date");
+                Assert(list[0].Time == new TimeSpan(9, 0, 0), "Expected 9:00 AM");
+                Assert(list[0].Title == "Open presents", "Expected title");
+                Assert(list[0].IsPending, "Expected Pending status");
+            }
+            finally
+            {
+                if (File.Exists(tempFile)) File.Delete(tempFile);
+            }
+        }
+
+        static void TestLoadQuotedCsv()
+        {
+            string tempFile = Path.GetTempFileName();
+            try
+            {
+                File.WriteAllText(tempFile, "Date,Time,Title,Status\n2026-10-07,08:32,\"check stove, turn off flame\",Pending\n");
+                var repo = new CsvRepository(tempFile);
+                var list = repo.Load();
+
+                Assert(list.Count == 1, "Expected 1 item");
+                Assert(list[0].Title == "check stove, turn off flame", "Expected unescaped title with comma");
+            }
+            finally
+            {
+                if (File.Exists(tempFile)) File.Delete(tempFile);
+            }
+        }
+
+        static void TestLoad12HourTimeFormats()
+        {
+            string tempFile = Path.GetTempFileName();
+            try
+            {
+                File.WriteAllText(tempFile, "Time,Title\n8:32 AM,Morning stretch\n8:49 PM,Watch evening news\n");
+                var repo = new CsvRepository(tempFile);
+                var list = repo.Load();
+
+                Assert(list.Count == 2, "Expected 2 items");
+                Assert(list[0].Time == new TimeSpan(8, 32, 0), "Expected 8:32 AM");
+                Assert(list[1].Time == new TimeSpan(20, 49, 0), "Expected 20:49 (8:49 PM)");
+            }
+            finally
+            {
+                if (File.Exists(tempFile)) File.Delete(tempFile);
+            }
+        }
+
+        static void TestSpecialDates()
+        {
+            string tempFile = Path.GetTempFileName();
+            try
+            {
+                File.WriteAllText(tempFile, "Date,Time,Title\ntoday,10:00,Team sync\ntomorrow,11:30,Dentist\n");
+                var repo = new CsvRepository(tempFile);
+                var list = repo.Load();
+
+                Assert(list.Count == 2, "Expected 2 items");
+                Assert(list[0].Date == DateTime.Today, "Expected today");
+                Assert(list[1].Date == DateTime.Today.AddDays(1), "Expected tomorrow");
+            }
+            finally
+            {
+                if (File.Exists(tempFile)) File.Delete(tempFile);
+            }
+        }
+
+        static void TestSaveRoundTrip()
+        {
+            string tempFile = Path.GetTempFileName();
+            try
+            {
+                var repo = new CsvRepository(tempFile);
+                var alarms = new List<AlarmItem>
+                {
+                    new AlarmItem(DateTime.Today, new TimeSpan(8, 32, 0), "check stove, carefully", "Pending"),
+                    new AlarmItem(DateTime.Today, new TimeSpan(8, 49, 0), "change tv to channel 5", "Triggered")
+                };
+
+                repo.Save(alarms);
+                var loaded = repo.Load();
+
+                Assert(loaded.Count == 2, "Expected 2 items after save and reload");
+                Assert(loaded[0].Title == "check stove, carefully", "Expected exact title with comma");
+                Assert(loaded[0].TimeString == "08:32", "Expected time 08:32");
+                Assert(loaded[0].Status == "Pending", "Expected status Pending");
+                Assert(loaded[1].Title == "change tv to channel 5", "Expected title");
+                Assert(loaded[1].Status == "Triggered", "Expected status Triggered");
+            }
+            finally
+            {
+                if (File.Exists(tempFile)) File.Delete(tempFile);
+            }
+        }
+
+        static void TestTriggerEvaluationLogic()
+        {
+            var pastAlarm = new AlarmItem(DateTime.Today, DateTime.Now.AddMinutes(-5).TimeOfDay, "Past alarm", "Pending");
+            var futureAlarm = new AlarmItem(DateTime.Today, DateTime.Now.AddMinutes(10).TimeOfDay, "Future alarm", "Pending");
+
+            DateTime now = DateTime.Now;
+
+            Assert(now >= pastAlarm.ScheduledDateTime, "Past alarm should be due");
+            Assert(now < futureAlarm.ScheduledDateTime, "Future alarm should not be due yet");
+        }
+
+        static void TestSnoozeCalculation()
+        {
+            var baseAlarm = new AlarmItem(DateTime.Today, new TimeSpan(12, 0, 0), "Lunch time", "Triggered");
+            DateTime snoozeTarget = DateTime.Now.AddMinutes(5);
+
+            var snoozed = new AlarmItem(snoozeTarget.Date, snoozeTarget.TimeOfDay, baseAlarm.Title + " (Snooze)", "Pending");
+
+            Assert(snoozed.IsPending, "Snoozed alarm should be Pending");
+            Assert(snoozed.Title == "Lunch time (Snooze)", "Title should indicate snooze");
+            Assert(snoozed.ScheduledDateTime > DateTime.Now, "Snoozed alarm should be in the future");
+        }
+    }
+}

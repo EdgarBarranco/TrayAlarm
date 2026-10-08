@@ -1,0 +1,26 @@
+# C# Project .gitignore
+# Build artifacts
+*.exe
+*.exe.*
+*.dll
+*.pdb
+*.obj
+*.swp
+*.tmp
+*.log
+
+# Source artifacts
+bin/
+obj/
+[Tt]estRunner.exe
+
+# Environment/Local files
+alarms.csv
+.vs/
+.vscode/
+*.user
+*.user_backup
+
+# System files
+desktop.ini
+Thumbs.db
