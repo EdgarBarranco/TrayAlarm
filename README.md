@@ -1,4 +1,4 @@
-# Tray Alarm Manager
+# Tray Alarm
 
 A lightweight, portable Windows system tray application for managing customizable alarms with names/titles, times, and dates.
 
